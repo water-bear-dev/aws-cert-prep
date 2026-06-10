@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Production builds
+dist/
+
+# Development / Local config
+.DS_Store
+scratch/
+
+# User Excluded Files
+agent_handoff.md
+QuestionBank/
