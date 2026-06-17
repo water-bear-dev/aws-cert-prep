@@ -293,10 +293,7 @@ export default function App() {
               <Dashboard 
                 selectedCert={selectedCert}
                 tests={tests} 
-                attempts={attempts} 
                 onStartTest={startTest} 
-                onViewAttempt={viewAttempt} 
-                onClearHistory={clearHistory}
               />
             )}
             
