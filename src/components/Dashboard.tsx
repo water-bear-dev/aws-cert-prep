@@ -2,6 +2,7 @@ import { PracticeTest, UserAttempt } from '../types';
 import { Play, ClipboardList, Clock, RefreshCw } from 'lucide-react';
 
 interface DashboardProps {
+  selectedCert: string;
   tests: Record<string, PracticeTest>;
   attempts: UserAttempt[];
   onStartTest: (testId: string, mode: 'practice' | 'exam') => void;
@@ -9,18 +10,32 @@ interface DashboardProps {
   onClearHistory: () => void;
 }
 
-export default function Dashboard({ tests, attempts, onStartTest, onViewAttempt, onClearHistory }: DashboardProps) {
+const CERT_INFO: Record<string, { title: string, code: string }> = {
+  mle_associate: { title: 'AWS Certified Machine Learning Engineer - Associate', code: 'MLA-C01' },
+  sa_associate: { title: 'AWS Certified Solutions Architect - Associate', code: 'SAA-C03' },
+  sa_professional: { title: 'AWS Certified Solutions Architect - Professional', code: 'SAP-C02' },
+  devops_professional: { title: 'AWS Certified DevOps Engineer - Professional', code: 'DOP-C02' },
+  security_specialty: { title: 'AWS Certified Security - Specialty', code: 'SCS-C02' },
+  de_associate: { title: 'AWS Certified Data Engineer - Associate', code: 'DEA-C01' },
+  dv_associate: { title: 'AWS Certified Developer - Associate', code: 'DVA-C02' },
+  sysops_associate: { title: 'AWS Certified SysOps Administrator - Associate', code: 'SOA-C02' }
+};
+
+export default function Dashboard({ selectedCert, tests, attempts, onStartTest, onViewAttempt, onClearHistory }: DashboardProps) {
+  // Filter attempts by the currently selected certification
+  const certAttempts = attempts.filter(a => a.certId === selectedCert);
+
   // Statistics Calculations
-  const totalCompleted = attempts.length;
+  const totalCompleted = certAttempts.length;
   const averageScore = totalCompleted 
-    ? Math.round(attempts.reduce((sum, item) => sum + item.score, 0) / totalCompleted) 
+    ? Math.round(certAttempts.reduce((sum, item) => sum + item.score, 0) / totalCompleted) 
     : 0;
   
-  const practiceCount = attempts.filter(a => a.mode === 'practice').length;
-  const examCount = attempts.filter(a => a.mode === 'exam').length;
+  const practiceCount = certAttempts.filter(a => a.mode === 'practice').length;
+  const examCount = certAttempts.filter(a => a.mode === 'exam').length;
   
   const bestScore = totalCompleted 
-    ? Math.max(...attempts.map(a => a.score)) 
+    ? Math.max(...certAttempts.map(a => a.score)) 
     : 0;
 
   return (
@@ -29,8 +44,8 @@ export default function Dashboard({ tests, attempts, onStartTest, onViewAttempt,
       {/* Hero Welcome banner */}
       <div className="glass-panel" style={{ padding: '2.5rem', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(6, 182, 212, 0.05) 100%)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
         <div style={{ flex: 1, minWidth: '300px' }}>
-          <span className="badge badge-orange" style={{ marginBottom: '1rem' }}>AWS Certified Machine Learning Engineer - Associate</span>
-          <h2 style={{ fontSize: '2.2rem', marginBottom: '0.8rem', lineHeight: 1.2 }}>Master your MLA-C01 Certification Exam</h2>
+          <span className="badge badge-orange" style={{ marginBottom: '1rem' }}>{CERT_INFO[selectedCert]?.title || 'AWS Certification'}</span>
+          <h2 style={{ fontSize: '2.2rem', marginBottom: '0.8rem', lineHeight: 1.2 }}>Master your {CERT_INFO[selectedCert]?.code || 'AWS'} Certification Exam</h2>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: '650px' }}>
             Interactive practice engine utilizing realistic scenario-based questions. Select between **Practice Mode** for immediate answer explanations, or **Exam Simulation Mode** to test your knowledge under real exam conditions.
           </p>
@@ -74,7 +89,7 @@ export default function Dashboard({ tests, attempts, onStartTest, onViewAttempt,
           <ClipboardList className="text-indigo-400" style={{ color: '#818cf8' }} /> Available Practice Exams
         </h3>
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
           {Object.entries(tests)
             .filter(([testId]) => !testId.startsWith('domain_'))
             .map(([testId, test]) => (
@@ -143,7 +158,7 @@ export default function Dashboard({ tests, attempts, onStartTest, onViewAttempt,
       </div>
 
       {/* History attempts */}
-      {attempts.length > 0 && (
+      {certAttempts.length > 0 && (
         <div className="glass-panel" style={{ padding: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
             <h3 style={{ fontSize: '1.3rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -170,7 +185,7 @@ export default function Dashboard({ tests, attempts, onStartTest, onViewAttempt,
                 </tr>
               </thead>
               <tbody>
-                {attempts.map((attempt) => {
+                {certAttempts.map((attempt) => {
                   const minutes = Math.floor(attempt.timeTaken / 60);
                   const seconds = attempt.timeTaken % 60;
                   return (

@@ -12,7 +12,7 @@ export default function CertSelect({ onSelectCert }: CertSelectProps) {
       level: 'Associate (MLA-C01)',
       icon: <GraduationCap size={32} style={{ color: 'var(--aws-orange)' }} />,
       desc: 'Validate your ability to build, train, tune, deploy, and monitor machine learning models on AWS.',
-      questions: 195,
+      questions: 0,
       status: 'available',
       badge: 'Active'
     },
@@ -20,43 +20,74 @@ export default function CertSelect({ onSelectCert }: CertSelectProps) {
       id: 'sa_associate',
       title: 'AWS Certified Solutions Architect',
       level: 'Associate (SAA-C03)',
-      icon: <Cloud size={32} style={{ color: '#9ca3af' }} />,
+      icon: <Cloud size={32} style={{ color: 'var(--aws-orange)' }} />,
       desc: 'Validate your ability to design and deploy secure and robust applications on AWS technologies.',
       questions: 0,
-      status: 'soon',
-      badge: 'Available Soon'
+      status: 'available',
+      badge: 'Active'
     },
     {
       id: 'sa_professional',
       title: 'AWS Certified Solutions Architect',
       level: 'Professional (SAP-C02)',
-      icon: <Award size={32} style={{ color: '#9ca3af' }} />,
+      icon: <Award size={32} style={{ color: 'var(--aws-orange)' }} />,
       desc: 'Validate advanced technical skills and experience designing distributed systems and applications on AWS.',
       questions: 0,
-      status: 'soon',
-      badge: 'Available Soon'
+      status: 'available',
+      badge: 'Active'
     },
     {
       id: 'devops_professional',
       title: 'AWS Certified DevOps Engineer',
       level: 'Professional (DOP-C02)',
-      icon: <Settings size={32} style={{ color: '#9ca3af' }} />,
+      icon: <Settings size={32} style={{ color: 'var(--aws-orange)' }} />,
       desc: 'Validate technical expertise in provisioning, operating, and managing distributed application systems on AWS.',
       questions: 0,
-      status: 'soon',
-      badge: 'Available Soon'
+      status: 'available',
+      badge: 'Active'
     },
     {
       id: 'security_specialty',
       title: 'AWS Certified Security',
       level: 'Specialty (SCS-C02)',
-      icon: <Shield size={32} style={{ color: '#9ca3af' }} />,
+      icon: <Shield size={32} style={{ color: 'var(--aws-orange)' }} />,
       desc: 'Validate your credentials in securing AWS environments, covering advanced security configurations and hybrid clouds.',
       questions: 0,
-      status: 'soon',
-      badge: 'Available Soon'
+      status: 'available',
+      badge: 'Active'
+    },
+    {
+      id: 'de_associate',
+      title: 'AWS Certified Data Engineer',
+      level: 'Associate (DEA-C01)',
+      icon: <Cloud size={32} style={{ color: 'var(--aws-orange)' }} />,
+      desc: 'Validate skills and experience in core data-related AWS services.',
+      questions: 0,
+      status: 'available',
+      badge: 'Active'
+    },
+    {
+      id: 'dv_associate',
+      title: 'AWS Certified Developer',
+      level: 'Associate (DVA-C02)',
+      icon: <Settings size={32} style={{ color: 'var(--aws-orange)' }} />,
+      desc: 'Validate your ability to develop, deploy, and debug cloud-based applications using AWS.',
+      questions: 0,
+      status: 'available',
+      badge: 'Active'
+    },
+    {
+      id: 'sysops_associate',
+      title: 'AWS Certified SysOps Administrator',
+      level: 'Associate (SOA-C02)',
+      icon: <Settings size={32} style={{ color: 'var(--aws-orange)' }} />,
+      desc: 'Validate technical expertise in deployment, management, and operations on the AWS platform.',
+      questions: 0,
+      status: 'available',
+      badge: 'Active'
     }
   ];
+
 
   return (
     <div className="animate-fade-in" style={{ maxWidth: '1100px', margin: '3rem auto 5rem auto', padding: '0 1.5rem' }}>

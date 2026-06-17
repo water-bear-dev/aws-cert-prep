@@ -4,13 +4,13 @@ A premium, interactive TypeScript preparation platform for AWS Certifications, s
 
 ## Features
 
-* **Multi-Certification Selection Portal**: Choose between different AWS certifications (MLE Associate is active, others marked as Coming Soon).
-* **Practice by Exam Domain**: Target specific preparation sections (e.g. Data Preparation, Model Development, Deployment, Monitoring) to master weak areas.
+* **Multi-Certification Selection Portal**: Choose between 8 different AWS certifications including Machine Learning Engineer, Solutions Architect, Data Engineer, Developer, SysOps Admin, DevOps, and Security.
+* **Practice by Exam Domain**: Target specific preparation sections. Domains with fewer than 10 questions are automatically filtered out, and the rest are ordered systematically.
 * **Interactive Test Engine**:
   * **Practice Mode**: Untimed with instant check-answer feedback and in-depth, styled explanation blocks.
   * **Exam Simulation**: Timed (165 minutes) with results hidden until final submission.
 * **Proficiency Diagnosis**: View diagnostic PASS/FAIL status and performance breakdowns per domain after completing exams.
-* **Responsive Dark-Mode UI**: Built with a sleek, glassmorphic dark-theme matching AWS cloud aesthetics.
+* **Responsive Dark-Mode UI**: Built with a sleek, glassmorphic dark-theme matching AWS cloud aesthetics with a consistent 2-column grid system.
 
 ---
 

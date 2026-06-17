@@ -228,7 +228,7 @@ def format_explanation(explanation_paragraphs, options, correct_answers):
         
     return formatted
 
-def process_paragraphs(paragraphs, rel_map):
+def process_paragraphs(paragraphs, rel_map, cert_id=""):
     questions = []
     
     # Split paragraphs into chunks starting with Question X
@@ -306,7 +306,7 @@ def process_paragraphs(paragraphs, rel_map):
         refs = []
         domain = ""
         
-        for ep in explanation_chunk:
+        for ep_idx, ep in enumerate(explanation_chunk):
             text = ep['text'].strip()
             
             # Generate image HTML tags if images exist in this paragraph
@@ -314,23 +314,26 @@ def process_paragraphs(paragraphs, rel_map):
             for img_id in ep['image_ids']:
                 if img_id in rel_map:
                     img_name = rel_map[img_id]
-                    img_htmls.append(f'<div style="display: flex; justify-content: center; margin: 1.5rem 0;"><img src="/images/{img_name}" style="max-width: 100%; max-height: 320px; border-radius: 8px; border: 1px solid var(--border-color); object-fit: contain;" /></div>')
+                    img_path = f"/images/{cert_id}/{img_name}" if cert_id else f"/images/{img_name}"
+                    img_htmls.append(f'<div style="display: flex; justify-content: center; margin: 1.5rem 0;"><img src="{img_path}" style="max-width: 100%; max-height: 320px; border-radius: 8px; border: 1px solid var(--border-color); object-fit: contain;" /></div>')
             
             if text:
-                if text.startswith("References:") or text.startswith("Reference:"):
+                lower_text = text.lower()
+                if lower_text.startswith("references:") or lower_text.startswith("reference:"):
                     urls = re.findall(r'https?://[^\s]+', text)
                     refs.extend(urls)
-                elif text.startswith("Domain"):
+                elif lower_text == "domain":
                     pass
+                elif ep_idx > 0 and explanation_chunk[ep_idx-1]['text'].strip().lower() == "domain":
+                    domain = text
+                elif lower_text.startswith("domain:") or lower_text.startswith("domain :"):
+                    parts = re.split(r'(?i)domain\s*:', text)
+                    if len(parts) > 1 and parts[1].strip():
+                        domain = parts[1].strip()
                 else:
-                    if text in ["ML Model Development", "Data Preparation for Machine Learning (ML)", 
-                                "ML Model Deployment and Operations", "ML Architecture and Design",
-                                "ML Implementation and Operations", "ML Engineering and Operations",
-                                "ML Model Evaluation and Optimization"]:
-                        domain = text
-                    elif text.startswith("Correct option:") or text.startswith("Correct options:"):
+                    if lower_text.startswith("correct option:") or lower_text.startswith("correct options:"):
                         explanation_paragraphs.append("\n\n<strong>Correct Option:</strong>")
-                    elif text.startswith("Incorrect options:") or text.startswith("Incorrect option:"):
+                    elif lower_text.startswith("incorrect options:") or lower_text.startswith("incorrect option:"):
                         explanation_paragraphs.append("\n\n<strong>Incorrect Options:</strong>")
                     else:
                         formatted_text = format_links(text)
@@ -339,13 +342,6 @@ def process_paragraphs(paragraphs, rel_map):
             # Append images immediately inside the text sequence
             explanation_paragraphs.extend(img_htmls)
             
-        # Fallback for domain if not matched exactly
-        if not domain:
-            for p in reversed(explanation_chunk):
-                t = p['text'].strip()
-                if t and not t.startswith("http") and len(t) < 60 and not any(m in t for m in ["Reference", "Domain", "option"]):
-                    domain = t
-                    break
                     
         # Apply bolding and bullet list layout mapping
         formatted_exp = format_explanation(explanation_paragraphs, options, adjusted_correct)
@@ -364,24 +360,49 @@ def process_paragraphs(paragraphs, rel_map):
     return questions
 
 # Parse files
-output_data = {}
-for test_idx, filename in enumerate(['AWS ML Engineer - Practice Test #1.docx', 'AWS ML Engineer - Practice Test #2.docx', 'AWS ML Engineer - Practice Test #3.docx'], 1):
-    if os.path.exists(filename):
-        img_out_dir = f'public/images'
-        paragraphs, rel_map = parse_docx(filename)
-        extract_images(filename, img_out_dir, rel_map)
-        
-        questions = process_paragraphs(paragraphs, rel_map)
-        output_data[f"test_{test_idx}"] = {
-            "title": f"Practice Test #{test_idx}",
-            "questions": questions
-        }
-    else:
-        print(f"File not found: {filename}")
+CERT_MAPPING = {
+    'AWS MLE': 'mle_associate',
+    'AWS SAA': 'sa_associate',
+    'AWS SAP': 'sa_professional',
+    'AWS DVA': 'dv_associate',
+    'AWS DEA': 'de_associate',
+    'AWS CloudOps': 'sysops_associate',
+    'AWS SCS C03': 'security_specialty',
+    'AWS AWS DevOpsProf & Network Specialty': 'devops_professional'
+}
 
-# Save JSON
+base_dir = 'QuestionBank'
 os.makedirs('public/data', exist_ok=True)
-with open('public/data/tests.json', 'w') as f:
-    json.dump(output_data, f, indent=2)
+
+for folder_name, cert_id in CERT_MAPPING.items():
+    folder_path = os.path.join(base_dir, folder_name)
+    if not os.path.isdir(folder_path):
+        print(f"Directory not found: {folder_path}")
+        continue
+        
+    output_data = {}
+    test_idx = 1
+    
+    for filename in sorted(os.listdir(folder_path)):
+        if filename.endswith('.docx') and not filename.startswith('~'):
+            filepath = os.path.join(folder_path, filename)
+            img_out_dir = f'public/images/{cert_id}'
+            
+            paragraphs, rel_map = parse_docx(filepath)
+            extract_images(filepath, img_out_dir, rel_map)
+            
+            questions = process_paragraphs(paragraphs, rel_map, cert_id)
+            title = f"{folder_name} - Practice Exam - #{test_idx}"
+            output_data[f"test_{test_idx}"] = {
+                "title": title,
+                "questions": questions
+            }
+            test_idx += 1
+            
+    if output_data:
+        json_path = f'public/data/{cert_id}.json'
+        with open(json_path, 'w') as f:
+            json.dump(output_data, f, indent=2)
+        print(f"Saved {json_path} with {len(output_data)} tests.")
 
 print("Parsed successfully!")

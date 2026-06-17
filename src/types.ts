@@ -17,6 +17,7 @@ export interface PracticeTest {
 
 export interface UserAttempt {
   id: string;
+  certId: string;
   testId: string;
   testTitle: string;
   date: string;

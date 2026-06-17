@@ -31,9 +31,14 @@ export default function App() {
 
   // Load tests JSON
   useEffect(() => {
-    fetch(`/data/tests.json?t=${new Date().getTime()}`)
+    if (!selectedCert || selectedCert === 'cert_select_portal') return;
+    
+    setLoading(true);
+    setError(null);
+    
+    fetch(`/data/${selectedCert}.json?t=${new Date().getTime()}`)
       .then((res) => {
-        if (!res.ok) throw new Error('Failed to load test questions data.');
+        if (!res.ok) throw new Error(`Failed to load test questions data for ${selectedCert}.`);
         return res.json();
       })
       .then((data: Record<string, PracticeTest>) => {
@@ -58,8 +63,20 @@ export default function App() {
         });
 
         const updatedTests = { ...data };
-        Object.entries(domainTests).forEach(([domainName, test]) => {
+        
+        // Filter domains with >= 10 questions and sort them alphabetically
+        const validDomains = Object.entries(domainTests)
+          .filter(([_, test]) => test.questions.length >= 10)
+          .sort((a, b) => a[0].localeCompare(b[0]));
+          
+        validDomains.forEach(([domainName, test], index) => {
           const slug = domainName.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+          
+          // Add Domain # prefix if it's missing
+          if (!/^domain\s*\d*:/i.test(domainName) && !/^domain/i.test(domainName)) {
+            test.title = `Domain ${index + 1}: ${domainName} (Practice)`;
+          }
+          
           updatedTests[`domain_${slug}`] = test;
         });
 
@@ -72,7 +89,10 @@ export default function App() {
         setLoading(false);
       });
 
-    // Load history from localStorage
+  }, [selectedCert]);
+
+  // Load history from localStorage
+  useEffect(() => {
     const savedAttempts = localStorage.getItem('aws_exam_prep_attempts');
     if (savedAttempts) {
       try {
@@ -129,6 +149,7 @@ export default function App() {
       
       // Sort and compare arrays
       const isCorrect = 
+        correctAnswers.length > 0 &&
         userAnswers.length === correctAnswers.length && 
         userAnswers.every((val) => correctAnswers.includes(val));
         
@@ -141,7 +162,8 @@ export default function App() {
     const timeTaken = (165 * 60) - session.timeRemaining;
 
     const newAttempt: UserAttempt = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: new Date().toISOString(),
+      certId: selectedCert!,
       testId: session.testId,
       testTitle: session.testTitle,
       date: new Date().toLocaleDateString(undefined, { 
@@ -172,13 +194,7 @@ export default function App() {
   };
 
   const handleSelectCertChange = (certId: string) => {
-    if (certId === 'cert_select_portal') {
-      triggerCertChange(null);
-      return;
-    }
-    if (certId === 'mle_associate') {
-      triggerCertChange('mle_associate');
-    }
+    triggerCertChange(certId === 'cert_select_portal' ? null : certId);
   };
 
   const triggerCertChange = (certId: string | null) => {
@@ -260,17 +276,26 @@ export default function App() {
                 <option value="mle_associate" style={{ background: '#090d16', color: 'var(--text-primary)' }}>
                   AWS Certified Machine Learning Engineer - Associate
                 </option>
-                <option value="sa_associate" disabled style={{ background: '#090d16', color: 'var(--text-muted)' }}>
-                  AWS Certified Solutions Architect - Associate (Soon)
+                <option value="sa_associate" style={{ background: '#090d16', color: 'var(--text-primary)' }}>
+                  AWS Certified Solutions Architect - Associate
                 </option>
-                <option value="sa_professional" disabled style={{ background: '#090d16', color: 'var(--text-muted)' }}>
-                  AWS Certified Solutions Architect - Professional (Soon)
+                <option value="sa_professional" style={{ background: '#090d16', color: 'var(--text-primary)' }}>
+                  AWS Certified Solutions Architect - Professional
                 </option>
-                <option value="devops_professional" disabled style={{ background: '#090d16', color: 'var(--text-muted)' }}>
-                  AWS Certified DevOps Engineer - Professional (Soon)
+                <option value="devops_professional" style={{ background: '#090d16', color: 'var(--text-primary)' }}>
+                  AWS Certified DevOps Engineer - Professional
                 </option>
-                <option value="security_specialty" disabled style={{ background: '#090d16', color: 'var(--text-muted)' }}>
-                  AWS Certified Security - Specialty (Soon)
+                <option value="security_specialty" style={{ background: '#090d16', color: 'var(--text-primary)' }}>
+                  AWS Certified Security - Specialty
+                </option>
+                <option value="de_associate" style={{ background: '#090d16', color: 'var(--text-primary)' }}>
+                  AWS Certified Data Engineer - Associate
+                </option>
+                <option value="dv_associate" style={{ background: '#090d16', color: 'var(--text-primary)' }}>
+                  AWS Certified Developer - Associate
+                </option>
+                <option value="sysops_associate" style={{ background: '#090d16', color: 'var(--text-primary)' }}>
+                  AWS Certified SysOps Administrator - Associate
                 </option>
                 <option value="cert_select_portal" style={{ background: '#090d16', color: 'var(--aws-orange)' }}>
                   ← Change Certificate Portal
@@ -299,8 +324,9 @@ export default function App() {
           <CertSelect onSelectCert={(certId) => triggerCertChange(certId)} />
         ) : (
           <>
-            {currentScreen === 'dashboard' && (
+            {currentScreen === 'dashboard' && selectedCert && (
               <Dashboard 
+                selectedCert={selectedCert}
                 tests={tests} 
                 attempts={attempts} 
                 onStartTest={startTest} 

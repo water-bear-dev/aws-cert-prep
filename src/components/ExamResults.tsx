@@ -26,6 +26,7 @@ export default function ExamResults({ attempt, questions, onBackToDashboard }: E
     const userAnswers = attempt.answers[q.id] || [];
     const correctAnswers = q.correct_answers || [];
     const isCorrect = 
+      correctAnswers.length > 0 &&
       userAnswers.length === correctAnswers.length && 
       userAnswers.every((val) => correctAnswers.includes(val));
       
@@ -41,6 +42,7 @@ export default function ExamResults({ attempt, questions, onBackToDashboard }: E
     const userAnswers = attempt.answers[q.id] || [];
     const correctAnswers = q.correct_answers || [];
     const isCorrect = 
+      correctAnswers.length > 0 &&
       userAnswers.length === correctAnswers.length && 
       userAnswers.every((val) => correctAnswers.includes(val));
 
@@ -184,6 +186,7 @@ export default function ExamResults({ attempt, questions, onBackToDashboard }: E
             const userAnswers = attempt.answers[q.id] || [];
             const correctAnswers = q.correct_answers || [];
             const isCorrect = 
+              correctAnswers.length > 0 &&
               userAnswers.length === correctAnswers.length && 
               userAnswers.every((val) => correctAnswers.includes(val));
 
