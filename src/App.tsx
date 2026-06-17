@@ -4,7 +4,9 @@ import TestEngine from './components/TestEngine';
 import ExamResults from './components/ExamResults';
 import CertSelect from './components/CertSelect';
 import { PracticeTest, ActiveSession, UserAttempt } from './types';
-import { BookOpen, GraduationCap, History, Award } from 'lucide-react';
+import { GraduationCap, Clock, Award } from 'lucide-react';
+import CustomSelect from './components/CustomSelect';
+import ConfirmModal from './components/ConfirmModal';
 
 export default function App() {
   const [tests, setTests] = useState<Record<string, PracticeTest>>({});
@@ -25,9 +27,22 @@ export default function App() {
   // Active session states
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
   
-  // Completed attempts history
-  const [attempts, setAttempts] = useState<UserAttempt[]>([]);
   const [selectedAttempt, setSelectedAttempt] = useState<UserAttempt | null>(null);
+
+  // Modal State
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    message: '',
+    onConfirm: () => {}
+  });
+
+  const openConfirm = (message: string, onConfirm: () => void) => {
+    setConfirmModal({ isOpen: true, message, onConfirm });
+  };
+
+  const closeConfirm = () => {
+    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+  };
 
   // Load tests JSON
   useEffect(() => {
@@ -45,17 +60,19 @@ export default function App() {
         // Group questions by domain
         const domainTests: Record<string, PracticeTest> = {};
         
-        Object.entries(data).forEach(([_, test]) => {
+        Object.values(data).forEach((test) => {
           test.questions.forEach((q) => {
-            const domainName = q.domain || 'Uncategorized';
-            if (!domainTests[domainName]) {
-              domainTests[domainName] = {
+            let domainName = q.domain || 'Uncategorized';
+            const uniqueDomainKey = domainName;
+
+            if (!domainTests[uniqueDomainKey]) {
+              domainTests[uniqueDomainKey] = {
                 title: `${domainName} (Practice)`,
                 questions: []
               };
             }
-            const newId = domainTests[domainName].questions.length + 1;
-            domainTests[domainName].questions.push({
+            const newId = domainTests[uniqueDomainKey].questions.length + 1;
+            domainTests[uniqueDomainKey].questions.push({
               ...q,
               id: newId
             });
@@ -69,12 +86,13 @@ export default function App() {
           .filter(([_, test]) => test.questions.length >= 10)
           .sort((a, b) => a[0].localeCompare(b[0]));
           
-        validDomains.forEach(([domainName, test], index) => {
-          const slug = domainName.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+        validDomains.forEach(([domainKey, test], index) => {
+          const slug = domainKey.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+          const originalDomainName = test.title.replace(' (Practice)', '');
           
           // Add Domain # prefix if it's missing
-          if (!/^domain\s*\d*:/i.test(domainName) && !/^domain/i.test(domainName)) {
-            test.title = `Domain ${index + 1}: ${domainName} (Practice)`;
+          if (!/^domain\s*\d*:/i.test(originalDomainName) && !/^domain/i.test(originalDomainName)) {
+            test.title = `Domain ${index + 1}: ${originalDomainName} (Practice)`;
           }
           
           updatedTests[`domain_${slug}`] = test;
@@ -90,32 +108,6 @@ export default function App() {
       });
 
   }, [selectedCert]);
-
-  // Load history from localStorage
-  useEffect(() => {
-    const savedAttempts = localStorage.getItem('aws_exam_prep_attempts');
-    if (savedAttempts) {
-      try {
-        setAttempts(JSON.parse(savedAttempts));
-      } catch (e) {
-        console.error('Error loading history:', e);
-      }
-    }
-  }, []);
-
-  // Save attempts to localStorage
-  const saveAttempt = (newAttempt: UserAttempt) => {
-    const updated = [newAttempt, ...attempts];
-    setAttempts(updated);
-    localStorage.setItem('aws_exam_prep_attempts', JSON.stringify(updated));
-  };
-
-  const clearHistory = () => {
-    if (window.confirm('Are you sure you want to clear your test history?')) {
-      setAttempts([]);
-      localStorage.removeItem('aws_exam_prep_attempts');
-    }
-  };
 
   const startTest = (testId: string, mode: 'practice' | 'exam') => {
     const test = tests[testId];
@@ -182,16 +174,12 @@ export default function App() {
       completed: true,
     };
 
-    saveAttempt(newAttempt);
+
     setSelectedAttempt(newAttempt);
     setActiveSession(null);
     setCurrentScreen('results');
   };
 
-  const viewAttempt = (attempt: UserAttempt) => {
-    setSelectedAttempt(attempt);
-    setCurrentScreen('results');
-  };
 
   const handleSelectCertChange = (certId: string) => {
     triggerCertChange(certId === 'cert_select_portal' ? null : certId);
@@ -199,12 +187,17 @@ export default function App() {
 
   const triggerCertChange = (certId: string | null) => {
     if (activeSession) {
-      if (!window.confirm('Switching certificates will cancel your current test/exam session. Do you want to proceed?')) {
-        return;
-      }
-      setActiveSession(null);
+      openConfirm('Switching certificates will cancel your current test/exam session. Do you want to proceed?', () => {
+        setActiveSession(null);
+        executeCertChange(certId);
+        closeConfirm();
+      });
+      return;
     }
-    
+    executeCertChange(certId);
+  };
+
+  const executeCertChange = (certId: string | null) => {
     if (certId === null) {
       setSelectedCert(null);
       localStorage.removeItem('selected_aws_cert');
@@ -255,63 +248,35 @@ export default function App() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+
           {selectedCert && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <select
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', zIndex: 100 }}>
+              <CustomSelect
                 value={selectedCert}
-                onChange={(e) => handleSelectCertChange(e.target.value)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid var(--border-color)',
-                  color: 'var(--text-primary)',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  outline: 'none',
-                  fontFamily: 'Outfit, sans-serif'
-                }}
-              >
-                <option value="mle_associate" style={{ background: '#090d16', color: 'var(--text-primary)' }}>
-                  AWS Certified Machine Learning Engineer - Associate
-                </option>
-                <option value="sa_associate" style={{ background: '#090d16', color: 'var(--text-primary)' }}>
-                  AWS Certified Solutions Architect - Associate
-                </option>
-                <option value="sa_professional" style={{ background: '#090d16', color: 'var(--text-primary)' }}>
-                  AWS Certified Solutions Architect - Professional
-                </option>
-                <option value="devops_professional" style={{ background: '#090d16', color: 'var(--text-primary)' }}>
-                  AWS Certified DevOps Engineer - Professional
-                </option>
-                <option value="security_specialty" style={{ background: '#090d16', color: 'var(--text-primary)' }}>
-                  AWS Certified Security - Specialty
-                </option>
-                <option value="de_associate" style={{ background: '#090d16', color: 'var(--text-primary)' }}>
-                  AWS Certified Data Engineer - Associate
-                </option>
-                <option value="dv_associate" style={{ background: '#090d16', color: 'var(--text-primary)' }}>
-                  AWS Certified Developer - Associate
-                </option>
-                <option value="sysops_associate" style={{ background: '#090d16', color: 'var(--text-primary)' }}>
-                  AWS Certified SysOps Administrator - Associate
-                </option>
-                <option value="cert_select_portal" style={{ background: '#090d16', color: 'var(--aws-orange)' }}>
-                  ← Change Certificate Portal
-                </option>
-              </select>
+                onChange={handleSelectCertChange}
+                options={[
+                  { value: 'mle_associate', label: 'AWS Certified Machine Learning Engineer - Associate' },
+                  { value: 'sa_associate', label: 'AWS Certified Solutions Architect - Associate' },
+                  { value: 'sa_professional', label: 'AWS Certified Solutions Architect - Professional' },
+                  { value: 'devops_professional', label: 'AWS Certified DevOps Engineer - Professional' },
+                  { value: 'security_specialty', label: 'AWS Certified Security - Specialty' },
+                  { value: 'network_specialty', label: 'AWS Certified Advanced Networking - Specialty' },
+                  { value: 'de_associate', label: 'AWS Certified Data Engineer - Associate' },
+                  { value: 'dv_associate', label: 'AWS Certified Developer - Associate' },
+                  { value: 'sysops_associate', label: 'AWS Certified SysOps Administrator - Associate' }
+                ]}
+              />
             </div>
           )}
 
           {selectedCert && currentScreen !== 'test' && (
             <nav style={{ display: 'flex', gap: '1rem' }}>
               <button 
-                className={`btn-secondary ${currentScreen === 'dashboard' ? 'active' : ''}`}
-                onClick={() => setCurrentScreen('dashboard')}
-                style={{ fontSize: '0.9rem', padding: '0.6rem 1.2rem', borderColor: currentScreen === 'dashboard' ? 'var(--accent-primary)' : 'var(--border-color)' }}
+                className="btn-secondary"
+                onClick={() => handleSelectCertChange('cert_select_portal')}
+                style={{ fontSize: '0.9rem', padding: '0.6rem 1.2rem', borderColor: 'var(--border-color)' }}
               >
-                <BookOpen size={16} /> Dashboard
+                ← Back to portal
               </button>
             </nav>
           )}
@@ -342,10 +307,11 @@ export default function App() {
                 onUpdateSession={setActiveSession}
                 onFinish={finishTestSession}
                 onCancel={() => {
-                  if (window.confirm('Are you sure you want to quit this test session? Your progress will be lost.')) {
+                  openConfirm('Are you sure you want to quit this test session? Your progress will be lost.', () => {
                     setActiveSession(null);
                     setCurrentScreen('dashboard');
-                  }
+                    closeConfirm();
+                  });
                 }}
               />
             )}
@@ -368,9 +334,15 @@ export default function App() {
       <footer style={{ marginTop: '3rem', borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
         <p>© 2026 AWS Exam Prep Engine. Powered by TypeScript & React.</p>
         <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <History size={12} /> Last sync: Jun 2026
+          <Clock size={12} /> Last sync: Jun 2026
         </p>
       </footer>
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }

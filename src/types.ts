@@ -12,6 +12,7 @@ export interface Question {
 
 export interface PracticeTest {
   title: string;
+  certGroup?: string;
   questions: Question[];
 }
 

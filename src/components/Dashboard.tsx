@@ -123,38 +123,58 @@ export default function Dashboard({ selectedCert, tests, attempts, onStartTest, 
       </div>
 
       {/* Practice by Exam Domain */}
-      <div>
-        <h3 style={{ fontSize: '1.5rem', marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <ClipboardList className="text-purple-400" style={{ color: '#c084fc' }} /> Practice by Domain
-        </h3>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
-          {Object.entries(tests)
-            .filter(([testId]) => testId.startsWith('domain_'))
-            .map(([testId, test]) => (
-              <div key={testId} className="glass-panel" style={{ padding: '1.8rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
-                    <h4 style={{ fontSize: '1.1rem', fontWeight: 700, lineHeight: 1.3 }}>{test.title.replace(' (Practice)', '')}</h4>
-                    <span className="badge badge-purple" style={{ flexShrink: 0 }}>{test.questions.length} Questions</span>
-                  </div>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                    Targeted practice focused exclusively on {test.title.replace(' (Practice)', '')} questions to master this specific exam domain.
-                  </p>
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.8rem', marginTop: 'auto' }}>
-                  <button 
-                    onClick={() => onStartTest(testId, 'practice')} 
-                    className="btn-secondary" 
-                    style={{ flex: 1, fontSize: '0.9rem', padding: '0.7rem', border: '1px solid var(--accent-secondary)', color: 'var(--accent-secondary)' }}
-                  >
-                    <RefreshCw size={16} /> Start Domain Practice
-                  </button>
-                </div>
-              </div>
-            ))}
+      <div style={{ marginTop: '3rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+          <ClipboardList size={24} className="text-purple" style={{ color: '#c084fc' }} />
+          <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Practice by Domain</h3>
         </div>
+
+        {Object.entries(
+          Object.entries(tests)
+            .filter(([testId]) => testId.startsWith('domain_'))
+            .reduce((acc, [testId, test]) => {
+              const group = test.certGroup || 'Default';
+              if (!acc[group]) acc[group] = [];
+              acc[group].push([testId, test]);
+              return acc;
+            }, {} as Record<string, [string, PracticeTest][]>)
+        ).map(([groupName, groupDomains]) => (
+          <div key={groupName} style={{ marginBottom: '2rem' }}>
+            {groupName !== 'Default' && (
+              <h4 style={{ fontSize: '1.2rem', fontWeight: 600, color: '#c084fc', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
+                {groupName}
+              </h4>
+            )}
+            <div className="grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
+              {groupDomains.map(([testId, test]) => {
+                return (
+                  <div key={testId} className="glass-panel" style={{ padding: '1.8rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
+                        <h4 style={{ fontSize: '1.1rem', fontWeight: 700, lineHeight: 1.3 }}>{test.title.replace(' (Practice)', '')}</h4>
+                        <span className="badge badge-purple" style={{ flexShrink: 0 }}>{test.questions.length} Questions</span>
+                      </div>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: '0.5rem' }}>
+                        Targeted practice focused exclusively on {test.title.replace(' (Practice)', '').replace(/^Domain \d+: /, '')} questions to master this specific exam domain.
+                      </p>
+                    </div>
+
+                    <div style={{ marginTop: 'auto' }}>
+                      <button
+                        onClick={() => onStartTest(testId, 'practice')}
+                        className="btn-secondary"
+                        style={{ width: '100%', padding: '0.7rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
+                      >
+                        <RefreshCw size={18} />
+                        Start Domain Practice
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* History attempts */}
