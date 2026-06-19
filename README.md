@@ -56,3 +56,11 @@ To keep the repository clean and protect the questions:
   python3 scripts/parse_exams.py
   ```
   This will generate `public/data/tests.json` and extract the diagram images to `public/images/`.
+
+---
+
+## Support
+
+If you find this project helpful, please consider supporting my work!
+
+[![Support Andrew Pham](./public/repo/kofi.png)](https://ko-fi.com/waterbear9999)
