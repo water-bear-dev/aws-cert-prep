@@ -1,5 +1,7 @@
 # AWS Certification Prep Engine
 
+![Dashboard Screenshot](./public/repo/dashboard.png)
+
 A premium, interactive TypeScript preparation platform for AWS Certifications, starting with the **AWS Certified Machine Learning Engineer - Associate (MLA-C01)** exam.
 
 ## Features
