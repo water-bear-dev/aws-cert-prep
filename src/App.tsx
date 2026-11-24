@@ -9,15 +9,14 @@ import CustomSelect from './components/CustomSelect';
 import ConfirmModal from './components/ConfirmModal';
 
 export default function App() {
-  const [tests, setTests] = useState<Record<string, PracticeTest>>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Certification Selection
   const [selectedCert, setSelectedCert] = useState<string | null>(() => {
     return localStorage.getItem('selected_aws_cert');
   });
-
+  const [tests, setTests] = useState<Record<string, PracticeTest>>({});
+  const [loading, setLoading] = useState(Boolean(selectedCert && selectedCert !== 'cert_select_portal'));
+  const [error, setError] = useState<string | null>(null);
+  
+  // Certification Selection
   // Navigation
   const [currentScreen, setCurrentScreen] = useState<'cert_select' | 'dashboard' | 'test' | 'results'>(() => {
     const saved = localStorage.getItem('selected_aws_cert');
@@ -198,6 +197,7 @@ export default function App() {
   };
 
   const executeCertChange = (certId: string | null) => {
+    setLoading(Boolean(certId && certId !== 'cert_select_portal'));
     if (certId === null) {
       setSelectedCert(null);
       localStorage.removeItem('selected_aws_cert');
